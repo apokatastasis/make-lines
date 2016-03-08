@@ -3,17 +3,27 @@
 #include <string.h>
 #include "util.h"
 
-#define DEBUG
+//#define DEBUG
 
 char *delete_at_index(int index, char *arr, int arr_size)
 {
-	int count;
+	unsigned int count;
 	char *arr_tmp;
 
 	if(index > arr_size -1)
 		return NULL;
 
-	for(count = index; count < arr_size - 1; count++)
+	/* TODO: this is a quick and dirty hack */
+	if(((int)arr[index] == -30 && (int)arr[index+1] == -128 && (int)arr[index+2] == -100)
+		|| ((int)arr[index] == -30 && (int)arr[index+1] == -128 && (int)arr[index+2] == -99))
+	{
+		for(count = index; count < (strlen(arr) - 2); count++)
+			arr[count] = arr[count + 3];
+
+		return arr;
+	}
+
+	for(count = index; count < strlen(arr); count++)
 	{
 
 #ifdef DEBUG
@@ -22,8 +32,6 @@ char *delete_at_index(int index, char *arr, int arr_size)
 
 		arr[count] = arr[count + 1];
 	}
-
-	arr[count] = '\0';
 
 	arr_tmp = realloc(arr, (arr_size - 1) * sizeof *arr);
 	if(arr_tmp == NULL)
@@ -39,11 +47,11 @@ char *delete_at_index(int index, char *arr, int arr_size)
 
 int main(int argc, char **argv)
 {
-	int count;
+	unsigned int count;
 	char *buffer = NULL;
 	char *filename = NULL;
 	FILE *fin = NULL;
-//	FILE *fout = NULL;
+	FILE *fout = NULL;
 
 	printf("Enter file to sanitize: ");
 
@@ -62,7 +70,14 @@ int main(int argc, char **argv)
 		return EXIT_FAILURE;
 	}
 
-//	fout = fopen("tmp_lns", "w");
+	fout = fopen("tmp_lns", "w");
+	if(fout == NULL)
+	{
+		perror(NULL);
+		free(filename);
+		fclose(fin);
+		return EXIT_FAILURE;
+	}
 	
 	while((buffer = getln(buffer, fin)) != NULL)
 	{
@@ -91,9 +106,13 @@ int main(int argc, char **argv)
 		printf("DEBUG: final modified buffer = %s\n", buffer);
 #endif
 
+		fprintf(fout, "%s\n", buffer);
 	}
 
-printf("buffer = %s\n", buffer);
+	fclose(fin);
+	fclose(fout);
+	free(buffer);
+	free(filename);
 
 	return 0;
 }
